@@ -20,7 +20,7 @@ int is_number(char *str) {
   return *tmp == '\0';
 }
 
-int do_send(int sockfd, const char *buf, size_t buflen) {
+int tcp_send(int sockfd, const char *buf, size_t buflen) {
   size_t bytes_sent;
 
   do {
