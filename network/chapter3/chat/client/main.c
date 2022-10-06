@@ -20,6 +20,21 @@ int is_numeric(char *input) {
   return *tmp == '\0';
 }
 
+int do_send(int sockfd, const char* buf, size_t buflen) {
+  size_t bytes_sent = 0;
+
+  do {
+    int tmp;
+    if ((tmp = send(sockfd, &buf[bytes_sent], buflen-bytes_sent, 0)) < 1) {
+      perror("send");
+      break;
+    }
+    bytes_sent += tmp;
+  } while(bytes_sent < buflen);
+
+  return bytes_sent >= buflen;
+}
+
 int main(int argc, char **argv) {
   if (argc != 3) {
     fprintf(stderr, "error parsing arguments. We need <IP-address> <port> to connect to the chat server\n");
@@ -84,8 +99,8 @@ int main(int argc, char **argv) {
 
       if (!fgets(buf, BUFSIZ, stdin)) break;
       if (strcmp(buf, ":quit\n") == 0) break;
-      if ((bytes_sent = send(sockfd, buf, strlen(buf), 0)) < 1) {
-        perror("send");
+     
+      if (!do_send(sockfd, buf, strlen(buf))) {
         continue;
       }
 
@@ -93,15 +108,15 @@ int main(int argc, char **argv) {
     }
 
     if (FD_ISSET(sockfd, &copy)) {
-      int bytes_sent;
+      int bytes_recv;
 
-      if (recv(sockfd, buf, BUFSIZ, 0) < 1) {
+      if ((bytes_recv = recv(sockfd, buf, BUFSIZ, 0)) < 1) {
         perror("recv");
         break;
       }
 
-      printf(buf);
-      memset(buf, 0, bytes_sent);
+      printf("%.*s", bytes_recv, buf); // remember that the string is not null terminated
+      memset(buf, 0, bytes_recv);
     }
   }
 

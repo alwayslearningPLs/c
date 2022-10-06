@@ -20,6 +20,21 @@ int is_number(char *str) {
   return *tmp == '\0';
 }
 
+int do_send(int sockfd, const char *buf, size_t buflen) {
+  size_t bytes_sent;
+
+  do {
+    int tmp;
+    if ((tmp = send(sockfd, buf + bytes_sent, buflen - bytes_sent, 0)) < 1) {
+      perror("send");
+      break;
+    }
+    bytes_sent += tmp;
+  } while(bytes_sent < buflen);
+
+  return bytes_sent >= buflen;
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     fprintf(stderr, "couldn't parse arguments correctly. You need to pass the <port> as first argument.\n");
@@ -127,7 +142,7 @@ int main(int argc, char **argv) {
           for (int fdr = 1; fdr <= max_socket; fdr++) {
             // if it is a socket fd from the master and it is not the master nor the sender, we send the content.
             if (FD_ISSET(fdr, &master) && fdr != sockfd && fdr != fd) {
-              send(fdr, read, bytes_recv, 0);
+              do_send(fdr, read, bytes_recv);
             }
           }
         }
