@@ -1,3 +1,4 @@
+#include <asm-generic/socket.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -48,6 +49,18 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  int ipv6_only = 1;
+  if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6_only, sizeof(ipv6_only)) != 0) {
+    perror("setsockopt");
+    return 1;
+  }
+
+  int reuse_addr = 1;
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr)) != 0) {
+    perror("setsockopt");
+    return 1;
+  }
+
   // Assigning a name to a socket
   if (bind(sockfd, res->ai_addr, res->ai_addrlen)) {
     perror("bind");
@@ -64,11 +77,11 @@ int main(int argc, char **argv) {
   fd_set master;
   FD_ZERO(&master);
   FD_SET(max_socket, &master);
-  
+
   for (;;) {
     fd_set reads;
     reads = master; // we need to copy the actual sockets, because select will modify the sockets to the ones that are available/ready.
-    if (select(max_socket+1, &reads, 0, 0, 0) < 0) {
+    if (select(max_socket+1, &reads, 0, 0, 0) < 0) { // Here we are blocking until some of the sockets inside the reads set is ready to read. We can pass as the last paramter the structure timeval to specify how much time we can wait for. struct timeval { long tv_sec; long tv_usec; };
       perror("select");
       continue;
     }
@@ -95,7 +108,7 @@ int main(int argc, char **argv) {
             continue;
           }
 
-          printf("connection with: %s:%s\n", client[0], client[1]);
+          printf("connection with: [%s]:%s\n", client[0], client[1]);
         } else {
           char read[BUFSIZ];
           int bytes_recv;

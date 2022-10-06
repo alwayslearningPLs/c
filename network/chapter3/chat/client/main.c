@@ -1,3 +1,5 @@
+#include <bits/types/struct_timeval.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -31,7 +33,7 @@ int main(int argc, char **argv) {
 
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET;
+  hints.ai_family = AF_INET6;
   hints.ai_socktype = SOCK_STREAM;
 
   struct addrinfo *res;
@@ -46,32 +48,61 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  int only_ipv6 = 1;
+  if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &only_ipv6, sizeof(int)) != 0) {
+    perror("setsockopt");
+    return 1;
+  }
+
   if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
     perror("connect");
     return 1;
   }
   freeaddrinfo(res);
 
+  fd_set reads;
+  FD_SET(sockfd, &reads);
+  FD_SET(STDIN_FILENO, &reads); // We can use select for any fd in linux. Awesome
+  
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 50000;
+
   for (;;) {
-    int bytes_sent, bytes_received;
     char buf[BUFSIZ];
+    fd_set copy;
 
-    fgets(buf, BUFSIZ, stdin);
+    copy = reads;
 
-    if ((bytes_sent = send(sockfd, buf, strlen(buf), 0)) < 1) {
-      perror("send");
-      continue;
+    if (select(sockfd+1, &copy, 0, 0, &timeout) < 0) {
+      perror("select");
+      break;
     }
 
-    memset(buf, 0, bytes_sent);
-    if (recv(sockfd, buf, BUFSIZ, 0) < 1) {
-      perror("recv");
-      continue;
+    if (FD_ISSET(STDIN_FILENO, &copy)) {
+      int bytes_sent;
+
+      if (!fgets(buf, BUFSIZ, stdin)) break;
+      if (strcmp(buf, ":quit\n") == 0) break;
+      if ((bytes_sent = send(sockfd, buf, strlen(buf), 0)) < 1) {
+        perror("send");
+        continue;
+      }
+
+      memset(buf, 0, bytes_sent);
     }
 
-    printf(buf);
+    if (FD_ISSET(sockfd, &copy)) {
+      int bytes_sent;
 
-    memset(buf, 0, bytes_sent);
+      if (recv(sockfd, buf, BUFSIZ, 0) < 1) {
+        perror("recv");
+        break;
+      }
+
+      printf(buf);
+      memset(buf, 0, bytes_sent);
+    }
   }
 
   close(sockfd);
