@@ -101,6 +101,9 @@ int main(void) {
 
     close(client_sock);
   }
+  
+  close(sockfd);
+  freeaddrinfo(addr);
 
   return 0;
 }

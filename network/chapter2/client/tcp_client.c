@@ -39,7 +39,7 @@ int main(void) {
 
   struct sockaddr_in addr_in;
 
-  // htons means host to network short
+  // htons means Host TO Network Short
   addr_in.sin_port = htons(PORT);
   addr_in.sin_family = AF_INET;
   if (inet_pton(addr_in.sin_family, IP_ADDRESS, &addr_in.sin_addr) <= 0) {
