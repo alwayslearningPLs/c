@@ -5,6 +5,8 @@
 
 __BEGIN_DECLS
 
+// Reference: https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
+
 // What:		/sys/class/net/<iface>/name_assign_type
 // Date:		July 2014
 // KernelVersion:	3.17
