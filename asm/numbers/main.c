@@ -1,8 +1,23 @@
+/**
+ * How to use?
+ *
+ * ./main 10 -d -b
+ *
+ * 0b00001010
+ *
+ * input: binary | decimal | hexadecimal
+ * output: binary | decimal | hexadecimal
+ *
+ * input: binary -> bdec() | bdec() && hex()
+ * input: decimal -> binary() | hex()
+ * input: hexadecimal -> bdec() && binary() | hdec()
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define BINARY_OPTION "-b"
+#define DEC_OPTION "-d"
 #define HEX_OPTION "-h"
 
 #define BINARY_SPACE 9
@@ -28,6 +43,10 @@ char hex_rpr(int input) {
   return input >= 10 ? input - 10 + 0x61 : input + 0x30;
 }
 
+char rpr_hex(char input) {
+  return input >= 0x61 ? (input - 0x61) + 10 : input - 0x30;
+}
+
 void hex(long input, char * dst) {
   if (input <= 0) return;
   size_t count = 0;
@@ -38,7 +57,6 @@ void hex(long input, char * dst) {
   dst[count++] = hex_rpr(input % 16);
 
   int max = 2 + ((count - 1) / 2) * 2;
-  printf("%ld %d\n", count, max);
   for (; count < max; count++) {
     dst[count] = 0x30;
   }
@@ -47,7 +65,13 @@ void hex(long input, char * dst) {
   strrev(dst);
 }
 
-void hdec(char * src, char * dst) {
+long hdec(char * src) {
+  int r = 0;
+  while (*src != '\0') {
+    r = (r + rpr_hex(*src)) * 16;
+    src++;
+  }
+  return r/16;
 }
 
 void binary(long input, char * dst) {
@@ -68,6 +92,15 @@ void binary(long input, char * dst) {
   strrev(dst);
 }
 
+long bdec(char * src) {
+  int r = 0;
+  while (*src != '\0') {
+    r = (r + *src - 0x30) * 2;
+    src++;
+  }
+  return r/2;
+}
+
 void pretty(const char *dst, const size_t space) {
   size_t count = 0;
   while (*dst != '\0') {
@@ -78,29 +111,41 @@ void pretty(const char *dst, const size_t space) {
   fputc('\n', stdout);
 }
 
+int is_option_ko(const char *input) {
+  return strcmp(input, BINARY_OPTION) != 0 && strcmp(input, HEX_OPTION) != 0 && strcmp(input, DEC_OPTION) != 0;
+}
+
 int main(int argc, char **argv) {
-  if (argc != 3) {
-    fprintf(stderr, "You must pass arguments: <number> [-h|-b]\n");
+  if (argc != 4) {
+    fprintf(stderr, "You must pass arguments: <number> [-h|-b|-d] [-h|-b|-d]\n");
     return 1;
   }
 
-  if (!is_number(argv[1])) {
-    fprintf(stderr, "You must pass arguments: <number> [-h|-b]\n");
+  if (is_option_ko(argv[2]) || is_option_ko(argv[3])) {
+    fprintf(stderr, "You must pass arguments: <number> [-h|-b|-d] [-h|-b|-d]\n");
     return 1;
   }
 
-  if (strcmp(argv[2], BINARY_OPTION) != 0 && strcmp(argv[2], HEX_OPTION) != 0) {
-    fprintf(stderr, "You must pass arguments: <number> [-h|-b]\n");
-    return 1;
-  }
-
-  char buf[50];
   if (strcmp(argv[2], BINARY_OPTION) == 0) {
-    binary(atoi(argv[1]), buf);
+    long dec = bdec(argv[1]);
+    if (strcmp(argv[3], HEX_OPTION) == 0) {
+      char buf[50];
+      hex(dec, buf);
+      printf("0x%s\n", buf);
+    } else printf("%ld\n", dec);
+  } else if (strcmp(argv[2], DEC_OPTION) == 0) {
+    char buf[50];
+    long dec = atoi(argv[1]);
+    if (strcmp(argv[3], HEX_OPTION) == 0) hex(dec, buf); else binary(dec, buf);
+    printf("%s", strcmp(argv[3], HEX_OPTION) == 0 ? "0x" : "0b");
     pretty(buf, BINARY_SPACE);
-  } else if (strcmp(argv[2], HEX_OPTION) == 0) {
-    hex(atoi(argv[1]), buf);
-    printf("0x%s\n", buf);
+  } else {
+    long dec = hdec(argv[1]);
+    if (strcmp(argv[3], BINARY_OPTION) == 0) {
+      char buf[50];
+      binary(dec, buf);pretty(buf, BINARY_SPACE);
+      pretty(buf, BINARY_SPACE);
+    } else printf("%ld\n", dec);
   }
 
   return 0;
