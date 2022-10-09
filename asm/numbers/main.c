@@ -9,12 +9,12 @@
  * output: binary | decimal | hexadecimal
  *
  * input: binary -> bdec() | bdec() && hex()
- * input: decimal -> binary() | hex()
- * input: hexadecimal -> bdec() && binary() | hdec()
+ * input: decimal -> binary() | hex() input: hexadecimal -> bdec() && binary() | hdec()
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 #define BINARY_OPTION "-b"
 #define DEC_OPTION "-d"
@@ -22,6 +22,9 @@
 
 #define BINARY_SPACE 9
 #define HEX_SPACE 0
+
+#define __bswap_constant_16(x)					\
+  ((__uint16_t) ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)))
 
 int is_number(char * input) {
   char *tmp = input;
@@ -117,7 +120,7 @@ int is_option_ko(const char *input) {
 
 int main(int argc, char **argv) {
   if (argc != 4) {
-    fprintf(stderr, "You must pass arguments: <number> [-h|-b|-d] [-h|-b|-d]\n");
+    fprintf(stderr, "You must pass arguments: <number> [-h|-b|-d] [-h|-b|-d|-r]\n");
     return 1;
   }
 
