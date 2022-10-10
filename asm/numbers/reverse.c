@@ -11,6 +11,11 @@
 #define __BYTE_ORDER __LITTLE_ENDIAN
 #endif
 
+// __BIG_ENDIAN   : 1 (dec) => 0b00000000 00000000 00000000 00000001
+// __LITTLE_ENDIAN: 1 (dec) => 0b00000001 00000000 00000000 00000000
+#define is_big_endian() (*((char *) &(int){1}) == 0)
+#define is_little_endian() (*((char *) &(int){1}) == 1)
+
 // host to network short
 // the most significant byte is at the highest address because my machine is a __LITTLE_ENDIAN
 #define personal_htons(x) \
@@ -19,8 +24,11 @@
 // 10100000 00110000 10101010 00000001 -- __LITTLE_ENDIAN
 // 00000001 10101010 00110000 10100000 -- __BIG_ENDIAN
 #define personal_htonl(x) \
-  ((u_int32_t) ((((x) & 0x000000ffu) << 24) | (((x) & 0x0000ff00u) << 8) | \
-                (((x) & 0x00ff0000u) >> 8)  | (((x) & 0xff000000u) >> 24)))
+  ((u_int32_t) ((((x) & 0x000000ffu) << 24) | \
+                (((x) & 0x0000ff00u) << 8 ) | \
+                (((x) & 0x00ff0000u) >> 8 ) | \
+                (((x) & 0xff000000u) >> 24)   \
+  ))
 
 // 8 bytes
 #define personal_swap64(x) \
@@ -74,6 +82,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  if (is_little_endian()) printf("My computer is little endian\n");
+  else printf("My computer is big endian\n");
+
   u_int32_t v = atoi(argv[1]);
 
   char from[60], to[60];
@@ -82,7 +93,7 @@ int main(int argc, char **argv) {
   u_int32_t vv = personal_htonl(v);
   binary(vv, to);
 
-  printf("%ud %ud\n", vv, htonl(v));
+  printf("%u %u\n", vv, htonl(v));
 
   pretty(from, BINARY_SPACE);
   printf(" -> ");

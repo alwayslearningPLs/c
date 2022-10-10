@@ -12,8 +12,22 @@
 // Interfaces are located inside /sys/class/net/ folder which points to /sys/devices/{name}
 // If it is virtual, it will point like that: /sys/class/net/docker0 -> /sys/devices/virtual/net/docker0/
 void interfaces() {
-  // "/sys/class/net/<iface>/name_assign_type";
-  printf("%s\n", PRINT_MACRO(NAME_ASSIGN_TYPE_ENUMERATED_BY_KERNEL));
+  char buf[BUFSIZ];
+  FILE *f;
+  char *filename = NAME_ASSIGN_TYPE_FILE("docker0");
+
+  printf("Reading from file %s\n", filename);
+
+  if ((f = fopen(filename, "r")) == NULL) {
+    printf("fopen error\n");
+    return;
+  }
+
+  if (!fgets(buf, BUFSIZ, f)) return;
+
+  printf("%s", buf);
+
+  fclose(f);
 }
 
 void display_interfaces() {
